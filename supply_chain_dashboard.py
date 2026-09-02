@@ -66,7 +66,7 @@ def render_supply_chain(title: str, caption: str, companies: dict[str, dict[str,
 
     with st.container(border=True):
         st.subheader("公司明細")
-        cols = ["板塊", "公司", "代碼", "財報日期", "循環階段", "營收年增%", "存貨年增%", "存貨天數", "存貨天數季變", "毛利率%", "3個月股價%", "判讀"]
+        cols = ["板塊", "公司", "代碼", "財報日期", "資料頻率", "循環階段", "營收年增%", "存貨年增%", "存貨天數", "存貨天數季變", "毛利率%", "3個月股價%", "判讀"]
         st.dataframe(view[cols], hide_index=True, width="stretch", column_config={
             "財報日期": st.column_config.DateColumn(format="YYYY-MM-DD"), "營收年增%": st.column_config.NumberColumn(format="%+.1f%%"),
             "存貨年增%": st.column_config.NumberColumn(format="%+.1f%%"), "存貨天數": st.column_config.NumberColumn(format="%.1f"),

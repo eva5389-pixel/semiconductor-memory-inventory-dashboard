@@ -52,11 +52,25 @@ def fetch_pcb_company(ticker: str, name: str, segment: str) -> tuple[dict, pd.Da
     stock = yf.Ticker(ticker)
     balance = stock.quarterly_balance_sheet
     income = stock.quarterly_income_stmt
+    frequency = "季報"
+    period_days = 90
+    yoy_periods = 4
     inventory = _row(balance, "Inventory")
     revenue = _row(income, "Total Revenue", "Operating Revenue")
     cost = _row(income, "Cost Of Revenue")
     gross_profit = _row(income, "Gross Profit")
     common_dates = inventory.index.intersection(revenue.index).intersection(cost.index).sort_values()
+    if len(common_dates) < 2:
+        balance = stock.balance_sheet
+        income = stock.income_stmt
+        frequency = "年報"
+        period_days = 365
+        yoy_periods = 1
+        inventory = _row(balance, "Inventory")
+        revenue = _row(income, "Total Revenue", "Operating Revenue")
+        cost = _row(income, "Cost Of Revenue")
+        gross_profit = _row(income, "Gross Profit")
+        common_dates = inventory.index.intersection(revenue.index).intersection(cost.index).sort_values()
     quarterly = pd.DataFrame({
         "Date": common_dates,
         "Inventory": inventory.reindex(common_dates).to_numpy(),
@@ -64,9 +78,9 @@ def fetch_pcb_company(ticker: str, name: str, segment: str) -> tuple[dict, pd.Da
         "Cost": cost.reindex(common_dates).to_numpy(),
     })
     quarterly["GrossProfit"] = gross_profit.reindex(common_dates).to_numpy() if not gross_profit.empty else np.nan
-    quarterly["InventoryDays"] = quarterly["Inventory"] / quarterly["Cost"].replace(0, np.nan) * 90
-    quarterly["InventoryYoY"] = quarterly["Inventory"].pct_change(4, fill_method=None) * 100
-    quarterly["RevenueYoY"] = quarterly["Revenue"].pct_change(4, fill_method=None) * 100
+    quarterly["InventoryDays"] = quarterly["Inventory"] / quarterly["Cost"].replace(0, np.nan) * period_days
+    quarterly["InventoryYoY"] = quarterly["Inventory"].pct_change(yoy_periods, fill_method=None) * 100
+    quarterly["RevenueYoY"] = quarterly["Revenue"].pct_change(yoy_periods, fill_method=None) * 100
     quarterly["GrossMargin"] = quarterly["GrossProfit"] / quarterly["Revenue"].replace(0, np.nan) * 100
 
     prices = stock.history(period="1y", auto_adjust=True)[["Close"]].dropna()
@@ -81,6 +95,7 @@ def fetch_pcb_company(ticker: str, name: str, segment: str) -> tuple[dict, pd.Da
         "公司": name,
         "代碼": ticker.split(".")[0],
         "財報日期": latest.get("Date", pd.NaT),
+        "資料頻率": frequency,
         "存貨（億元）": latest.get("Inventory", np.nan) / 1e8,
         "營收（億元）": latest.get("Revenue", np.nan) / 1e8,
         "存貨天數": latest.get("InventoryDays", np.nan),

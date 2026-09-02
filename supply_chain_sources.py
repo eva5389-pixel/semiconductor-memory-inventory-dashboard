@@ -17,6 +17,12 @@ HVDC_COMPANIES = {
     "電源測試／基礎設施": {"2360.TW": "致茂", "1519.TW": "華城", "1513.TW": "中興電"},
 }
 
+SILICON_WAFER_COMPANIES = {
+    "台灣矽晶圓": {"6488.TWO": "環球晶", "3532.TW": "台勝科", "6182.TWO": "合晶"},
+    "磊晶圓／材料": {"3016.TW": "嘉晶", "5483.TWO": "中美晶"},
+    "日本矽晶圓龍頭": {"3436.T": "SUMCO", "4063.T": "信越化學"},
+}
+
 
 def fetch_supply_chain(companies: dict[str, dict[str, str]]) -> tuple[pd.DataFrame, pd.DataFrame, list[str]]:
     summaries: list[dict] = []

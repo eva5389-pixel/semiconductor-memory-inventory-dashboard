@@ -7,6 +7,7 @@ page = st.navigation(
     [
         st.Page("app_pages/semiconductor.py", title="半導體與記憶體", icon=":material/memory:"),
         st.Page("app_pages/high_end_pcb.py", title="高階 PCB", icon=":material/developer_board:"),
+        st.Page("app_pages/silicon_wafer.py", title="矽晶圓", icon=":material/circle:"),
         st.Page("app_pages/optical.py", title="光通訊", icon=":material/hub:"),
         st.Page("app_pages/hvdc.py", title="800V 直流電", icon=":material/electrical_services:"),
         st.Page("app_pages/power_ai.py", title="電力循環與 AI", icon=":material/electric_bolt:"),
