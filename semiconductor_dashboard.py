@@ -26,17 +26,33 @@ def load_fred(refresh: bool = False) -> tuple[pd.DataFrame, list[str], str]:
 
 
 @st.cache_data(ttl="2h", max_entries=3, show_spinner=False)
-def load_trendforce_prices() -> tuple[pd.DataFrame, str]:
+def load_trendforce_prices(refresh: bool = False) -> tuple[pd.DataFrame, str]:
+    snapshot_dir = Path(__file__).parent / "data_snapshots"
+    if not refresh and (snapshot_dir / "trendforce_prices.csv").exists():
+        update = (snapshot_dir / "trendforce_update.txt").read_text(encoding="utf-8").strip()
+        return pd.read_csv(snapshot_dir / "trendforce_prices.csv"), update
     return fetch_trendforce_prices()
 
 
 @st.cache_data(ttl="6h", max_entries=3, show_spinner=False)
-def load_trendforce_articles() -> tuple[pd.DataFrame, list[str]]:
+def load_trendforce_articles(refresh: bool = False) -> tuple[pd.DataFrame, list[str]]:
+    snapshot = Path(__file__).parent / "data_snapshots" / "trendforce_articles.csv"
+    if not refresh and snapshot.exists():
+        return pd.read_csv(snapshot), []
     return fetch_trendforce_articles()
 
 
 @st.cache_data(ttl="6h", max_entries=3, show_spinner=False)
-def load_ccl() -> tuple[pd.DataFrame, pd.DataFrame, list[str]]:
+def load_ccl(refresh: bool = False) -> tuple[pd.DataFrame, pd.DataFrame, list[str]]:
+    snapshot_dir = Path(__file__).parent / "data_snapshots"
+    summary_file = snapshot_dir / "ccl_summaries.csv"
+    history_file = snapshot_dir / "ccl_history.csv"
+    if not refresh and summary_file.exists() and history_file.exists():
+        return (
+            pd.read_csv(summary_file, parse_dates=["財報日期"]),
+            pd.read_csv(history_file, parse_dates=["Date"]),
+            [],
+        )
     return fetch_ccl_dashboard()
 
 
@@ -48,16 +64,16 @@ with st.sidebar:
     years = st.segmented_control("歷史範圍", ["3 年", "5 年", "10 年"], default="5 年")
     if st.button("重新抓取資料", icon=":material/refresh:", width="stretch"):
         st.cache_data.clear()
-        st.session_state["refresh_fred_once"] = True
+        st.session_state["refresh_all_once"] = True
         st.rerun()
     st.divider()
     st.link_button("FRED 資料庫", "https://fred.stlouisfed.org/", width="stretch")
     st.link_button("TrendForce 價格頁", TRENDFORCE_PRICE_URL, width="stretch")
 
 fred_slot = st.container()
+refresh_all = bool(st.session_state.pop("refresh_all_once", False))
 with fred_slot.skeleton():
-    refresh_fred = bool(st.session_state.pop("refresh_fred_once", False))
-    raw, fred_errors, fred_source = load_fred(refresh=refresh_fred)
+    raw, fred_errors, fred_source = load_fred(refresh=refresh_all)
     cycle = build_cycle_history(raw)
     latest = latest_complete(cycle)
 
@@ -138,7 +154,7 @@ with price_col:
     with st.container(border=True):
         st.subheader("公開記憶體價格快照")
         try:
-            prices, price_update = load_trendforce_prices()
+            prices, price_update = load_trendforce_prices(refresh=refresh_all)
             st.caption(f"TrendForce 更新：{price_update}")
             st.dataframe(prices, hide_index=True, width="stretch", column_config={"均價": st.column_config.NumberColumn(format="%.3f")})
         except Exception as exc:
@@ -147,7 +163,7 @@ with price_col:
 with news_col:
     with st.container(border=True):
         st.subheader("記憶體供需觀察")
-        articles, article_errors = load_trendforce_articles()
+        articles, article_errors = load_trendforce_articles(refresh=refresh_all)
         if articles.empty:
             st.warning("TrendForce 公開新聞目前無法讀取。")
             for url in TRENDFORCE_ARTICLES:
@@ -159,7 +175,7 @@ with news_col:
 st.header("CCL 銅箔基板庫存與需求代理")
 st.caption("核心觀察：台光電、台燿、聯茂。季度存貨與營收來自 Yahoo Finance 彙整財報，資料日期依各公司最新可得季度；月營收與正式申報可回查 TWSE／MOPS。")
 with st.skeleton(height=220):
-    ccl_summary, ccl_history, ccl_errors = load_ccl()
+    ccl_summary, ccl_history, ccl_errors = load_ccl(refresh=refresh_all)
 if ccl_summary.empty:
     st.warning("CCL 公司資料目前無法取得。")
 else:
