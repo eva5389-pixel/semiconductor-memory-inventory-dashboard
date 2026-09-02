@@ -1,23 +1,23 @@
 [theme]
-base = "light"
-primaryColor = "#087E8B"
-backgroundColor = "#FFFFFF"
-secondaryBackgroundColor = "#F3F7F8"
-textColor = "#1D2A35"
-linkColor = "#087E8B"
-borderColor = "#D7E1E5"
-dataframeBorderColor = "#D7E1E5"
-dataframeHeaderBackgroundColor = "#E9F1F3"
-chartCategoricalColors = ["#087E8B", "#2563EB", "#F59E0B", "#DC2626", "#7C3AED", "#059669"]
+base = "dark"
+primaryColor = "#38BDF8"
+backgroundColor = "#05080D"
+secondaryBackgroundColor = "#111827"
+textColor = "#F8FAFC"
+linkColor = "#38BDF8"
+borderColor = "#334155"
+dataframeBorderColor = "#334155"
+dataframeHeaderBackgroundColor = "#172033"
+chartCategoricalColors = ["#38BDF8", "#2DD4BF", "#FBBF24", "#FB7185", "#A78BFA", "#4ADE80"]
 baseRadius = "large"
 showWidgetBorder = true
 
 [theme.sidebar]
-backgroundColor = "#F3F7F8"
-secondaryBackgroundColor = "#E9F1F3"
-textColor = "#1D2A35"
-primaryColor = "#087E8B"
-borderColor = "#D7E1E5"
+backgroundColor = "#0B1220"
+secondaryBackgroundColor = "#111827"
+textColor = "#F8FAFC"
+primaryColor = "#38BDF8"
+borderColor = "#334155"
 
 [server]
 headless = true

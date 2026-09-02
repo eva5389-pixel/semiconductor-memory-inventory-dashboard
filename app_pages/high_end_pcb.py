@@ -66,8 +66,7 @@ with left:
             color=alt.Color("循環階段:N", scale=alt.Scale(domain=cycle_order, range=cycle_colors), title="循環階段"),
             tooltip=["板塊:N", "公司:N", alt.Tooltip("營收年增%:Q", format="+.1f"), alt.Tooltip("存貨天數季變:Q", format="+.1f"), "循環階段:N"],
         )
-        labels = points.mark_text(align="left", dx=9, fontSize=12).encode(text="公司:N")
-        st.altair_chart((zero_x + zero_y + points + labels).properties(height=420).interactive(), width="stretch")
+        st.altair_chart((zero_x + zero_y + points).properties(height=420).interactive(), width="stretch")
 with right:
     with st.container(border=True):
         st.subheader("板塊中位數")
