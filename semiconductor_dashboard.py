@@ -13,11 +13,13 @@ from data_sources import FRED_SERIES, TRENDFORCE_ARTICLES, TRENDFORCE_PRICE_URL,
 
 
 @st.cache_data(ttl="6h", max_entries=3, show_spinner=False)
-def load_fred() -> tuple[pd.DataFrame, list[str], str]:
+def load_fred(refresh: bool = False) -> tuple[pd.DataFrame, list[str], str]:
+    snapshot = Path(__file__).parent / "data_snapshots" / "fred_bundle.csv"
+    if not refresh and snapshot.exists():
+        return pd.read_csv(snapshot, parse_dates=["Date"]), [], "FRED 備援快照"
     raw, errors = fetch_fred_bundle()
     if not raw.empty:
         return raw, errors, "FRED 即時資料"
-    snapshot = Path(__file__).parent / "data_snapshots" / "fred_bundle.csv"
     if snapshot.exists():
         return pd.read_csv(snapshot, parse_dates=["Date"]), errors, "FRED 備援快照"
     return raw, errors, "FRED 即時資料"
@@ -46,6 +48,7 @@ with st.sidebar:
     years = st.segmented_control("歷史範圍", ["3 年", "5 年", "10 年"], default="5 年")
     if st.button("重新抓取資料", icon=":material/refresh:", width="stretch"):
         st.cache_data.clear()
+        st.session_state["refresh_fred_once"] = True
         st.rerun()
     st.divider()
     st.link_button("FRED 資料庫", "https://fred.stlouisfed.org/", width="stretch")
@@ -53,7 +56,8 @@ with st.sidebar:
 
 fred_slot = st.container()
 with fred_slot.skeleton():
-    raw, fred_errors, fred_source = load_fred()
+    refresh_fred = bool(st.session_state.pop("refresh_fred_once", False))
+    raw, fred_errors, fred_source = load_fred(refresh=refresh_fred)
     cycle = build_cycle_history(raw)
     latest = latest_complete(cycle)
 
