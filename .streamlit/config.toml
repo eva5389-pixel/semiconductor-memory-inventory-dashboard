@@ -1,0 +1,12 @@
+[theme]
+base = "dark"
+primaryColor = "#38BDF8"
+backgroundColor = "#07111F"
+secondaryBackgroundColor = "#111C2E"
+textColor = "#E5EEF8"
+baseRadius = "large"
+showWidgetBorder = true
+
+[server]
+headless = true
+
