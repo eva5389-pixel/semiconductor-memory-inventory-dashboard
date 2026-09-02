@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import altair as alt
 import pandas as pd
 import streamlit as st
@@ -8,12 +10,18 @@ from eia_sources import EIA_BROWSER_URL, STATE_NAMES, fetch_eia_commercial_power
 
 
 @st.cache_data(ttl="6h", max_entries=3, show_spinner=False)
-def load_eia_power() -> pd.DataFrame:
+def load_eia_power() -> tuple[pd.DataFrame, str]:
     try:
         api_key = st.secrets.get("EIA_API_KEY", None)
     except Exception:
         api_key = None
-    return fetch_eia_commercial_power(api_key=api_key)
+    try:
+        return fetch_eia_commercial_power(api_key=api_key), "EIA 即時資料"
+    except Exception:
+        snapshot = Path(__file__).resolve().parents[1] / "data_snapshots" / "eia_power.csv"
+        if snapshot.exists():
+            return pd.read_csv(snapshot, parse_dates=["Date"]), "EIA 備援快照"
+        raise
 
 
 st.title("電力循環與 AI 用電影響力")
@@ -28,11 +36,14 @@ with st.sidebar:
 
 with st.skeleton(height=220):
     try:
-        power = load_eia_power()
+        power, data_source = load_eia_power()
     except Exception as exc:
         st.error(f"EIA Electricity 暫時無法讀取：{type(exc).__name__}")
         st.write("可在 Streamlit Secrets 設定 `EIA_API_KEY`；未設定時程式使用 EIA 的 DEMO_KEY。")
         st.stop()
+
+if data_source == "EIA 備援快照":
+    st.info("EIA 即時 API 暫時無法連線，目前顯示最近一次成功更新的備援快照。")
 
 latest_rows = power.dropna(subset=["sales_yoy", "price_yoy"]).sort_values("Date").groupby("stateid", as_index=False).tail(1)
 selected = latest_rows.loc[latest_rows["stateid"].eq(selected_state)]

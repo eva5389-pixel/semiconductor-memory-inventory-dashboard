@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import altair as alt
 import pandas as pd
 import streamlit as st
@@ -10,7 +12,18 @@ from supply_chain_sources import fetch_supply_chain
 def render_supply_chain(title: str, caption: str, companies: dict[str, dict[str, str]], cache_key: str, caveat: str) -> None:
     @st.cache_data(ttl="6h", max_entries=3, show_spinner=False)
     def load(_companies: dict[str, dict[str, str]], _cache_key: str):
-        return fetch_supply_chain(_companies)
+        summaries, history, errors = fetch_supply_chain(_companies)
+        valid = int(summaries.get("財報日期", pd.Series(dtype=object)).notna().sum())
+        if valid >= max(1, len(summaries) // 2):
+            return summaries, history, errors, "即時資料"
+        snapshot_dir = Path(__file__).parent / "data_snapshots"
+        summary_file = snapshot_dir / f"{_cache_key}_summaries.csv"
+        history_file = snapshot_dir / f"{_cache_key}_history.csv"
+        if summary_file.exists() and history_file.exists():
+            summaries = pd.read_csv(summary_file, parse_dates=["財報日期"])
+            history = pd.read_csv(history_file, parse_dates=["Date"])
+            return summaries, history, errors, "備援快照"
+        return summaries, history, errors, "即時資料"
 
     st.title(title)
     st.caption(caption)
@@ -20,7 +33,9 @@ def render_supply_chain(title: str, caption: str, companies: dict[str, dict[str,
         st.caption("滑鼠移到圖中資料點可查看公司名稱，避免標籤遮住圖形。")
 
     with st.skeleton(height=220):
-        summaries, history, errors = load(companies, cache_key)
+        summaries, history, errors, source = load(companies, cache_key)
+    if source == "備援快照":
+        st.info("即時來源暫時受限，目前顯示最近一次成功更新的備援快照。")
     if summaries.empty:
         st.error("目前無法取得資料，請稍後重新整理。")
         st.stop()
