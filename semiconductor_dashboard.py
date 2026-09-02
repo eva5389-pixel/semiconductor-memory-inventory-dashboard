@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from pathlib import Path
 
 import altair as alt
 import pandas as pd
@@ -12,8 +13,14 @@ from data_sources import FRED_SERIES, TRENDFORCE_ARTICLES, TRENDFORCE_PRICE_URL,
 
 
 @st.cache_data(ttl="6h", max_entries=3, show_spinner=False)
-def load_fred() -> tuple[pd.DataFrame, list[str]]:
-    return fetch_fred_bundle()
+def load_fred() -> tuple[pd.DataFrame, list[str], str]:
+    raw, errors = fetch_fred_bundle()
+    if not raw.empty:
+        return raw, errors, "FRED 即時資料"
+    snapshot = Path(__file__).parent / "data_snapshots" / "fred_bundle.csv"
+    if snapshot.exists():
+        return pd.read_csv(snapshot, parse_dates=["Date"]), errors, "FRED 備援快照"
+    return raw, errors, "FRED 即時資料"
 
 
 @st.cache_data(ttl="2h", max_entries=3, show_spinner=False)
@@ -46,7 +53,7 @@ with st.sidebar:
 
 fred_slot = st.container()
 with fred_slot.skeleton():
-    raw, fred_errors = load_fred()
+    raw, fred_errors, fred_source = load_fred()
     cycle = build_cycle_history(raw)
     latest = latest_complete(cycle)
 
@@ -55,6 +62,9 @@ if latest is None:
     if fred_errors:
         st.caption("；".join(fred_errors))
     st.stop()
+
+if fred_source == "FRED 備援快照":
+    st.info("FRED 即時下載暫時受限，目前顯示最近一次成功更新的備援快照。")
 
 phase = str(latest["phase"])
 phase_text, business_stage, phase_color = PHASE_META[phase]
@@ -187,7 +197,6 @@ st.info("CCL 判讀方式：存貨天數上升且營收動能放慢，代表庫�
 
 with st.expander("資料來源與限制"):
     fred_table = pd.DataFrame([{"用途": key, "FRED ID": spec[0], "名稱": spec[1], "單位": spec[2], "來源": f"https://fred.stlouisfed.org/series/{spec[0]}"} for key, spec in FRED_SERIES.items()])
-    st.dataframe(fred_table, hide_index=True, width="stretch", column_config={"來源": st.column_config.LinkColumn(display_text="FRED")})
     st.write("TrendForce 僅讀取無需登入即可瀏覽的公開頁面；不繞過會員、付費牆或下載限制。網頁格式變更時會顯示錯誤與原始連結，不會捏造即時價格。")
     st.write("FRED 電子產品資料涵蓋電腦與電子產品，並非純記憶體產業；適合用作總體供應鏈代理指標。投資判斷仍應搭配公司財報庫存天數與法說會。")
     st.write("CCL 公司季度存貨由 Yahoo Finance 彙整財報取得，正式數值應以 TWSE／MOPS 財務報告為準；存貨天數以季度銷貨成本折算 90 天，屬比較用估算。")

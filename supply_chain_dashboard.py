@@ -11,14 +11,14 @@ from supply_chain_sources import fetch_supply_chain
 
 def render_supply_chain(title: str, caption: str, companies: dict[str, dict[str, str]], cache_key: str, caveat: str) -> None:
     @st.cache_data(ttl="6h", max_entries=3, show_spinner=False)
-    def load(_companies: dict[str, dict[str, str]], _cache_key: str):
-        summaries, history, errors = fetch_supply_chain(_companies)
+    def load(companies_arg: dict[str, dict[str, str]], cache_key_arg: str):
+        summaries, history, errors = fetch_supply_chain(companies_arg)
         valid = int(summaries.get("財報日期", pd.Series(dtype=object)).notna().sum())
         if valid >= max(1, len(summaries) // 2):
             return summaries, history, errors, "即時資料"
         snapshot_dir = Path(__file__).parent / "data_snapshots"
-        summary_file = snapshot_dir / f"{_cache_key}_summaries.csv"
-        history_file = snapshot_dir / f"{_cache_key}_history.csv"
+        summary_file = snapshot_dir / f"{cache_key_arg}_summaries.csv"
+        history_file = snapshot_dir / f"{cache_key_arg}_history.csv"
         if summary_file.exists() and history_file.exists():
             summaries = pd.read_csv(summary_file, parse_dates=["財報日期"])
             history = pd.read_csv(history_file, parse_dates=["Date"])
@@ -96,7 +96,8 @@ def render_supply_chain(title: str, caption: str, companies: dict[str, dict[str,
             tooltip=[alt.Tooltip("Date:T", format="%Y-%m-%d"), "板塊:N", "公司:N", alt.Tooltip("InventoryDays:Q", format=".1f")],
         ).properties(height=390).interactive(), width="stretch")
     if errors:
-        st.warning("部分公司資料暫時未回傳：" + "；".join(errors))
+        with st.expander("部分即時來源未回傳"):
+            st.caption("；".join(errors))
     with st.expander("板塊定義與限制"):
         st.write(caveat)
         st.write("板塊是供應鏈觀察名單，不代表公司營收全部來自該主題；財報資料可能延遲，投資判斷應回查公司公告。")
