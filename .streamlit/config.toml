@@ -1,12 +1,23 @@
 [theme]
-base = "dark"
-primaryColor = "#38BDF8"
-backgroundColor = "#07111F"
-secondaryBackgroundColor = "#111C2E"
-textColor = "#E5EEF8"
+base = "light"
+primaryColor = "#087E8B"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F3F7F8"
+textColor = "#1D2A35"
+linkColor = "#087E8B"
+borderColor = "#D7E1E5"
+dataframeBorderColor = "#D7E1E5"
+dataframeHeaderBackgroundColor = "#E9F1F3"
+chartCategoricalColors = ["#087E8B", "#2563EB", "#F59E0B", "#DC2626", "#7C3AED", "#059669"]
 baseRadius = "large"
 showWidgetBorder = true
 
+[theme.sidebar]
+backgroundColor = "#F3F7F8"
+secondaryBackgroundColor = "#E9F1F3"
+textColor = "#1D2A35"
+primaryColor = "#087E8B"
+borderColor = "#D7E1E5"
+
 [server]
 headless = true
-
